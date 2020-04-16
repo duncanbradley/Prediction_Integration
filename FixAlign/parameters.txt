@@ -136,7 +136,7 @@ saccade_dur_crit = 1000
 #following fixation?  If so, put a criterion for a short fixation in ms. Default is 1,
 #resulting in no combination.
 
-short_crit = 1
+short_crit = 80
 
 
 ##############################
