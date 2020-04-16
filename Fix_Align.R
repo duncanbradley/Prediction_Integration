@@ -7,7 +7,7 @@ fix_align <- function(start_pts,
                       use_run_rule=TRUE,
                       trial_plots=FALSE,
                       save_trial_plots=FALSE,
-                      summary_file=FALSE,
+                      summary_file=TRUE,
                       show_image=FALSE,
                       fa_dir='FA_Dir',
                       start_flag='TRIALID',
@@ -1037,11 +1037,12 @@ numbers <- sprintf("%02d", numbers)
 
 asc_files <- paste0("RAW_asc/wider_aois/", "w_", file, numbers, ".asc")
 
-xy_bounds <- c(0,
-               146, # halfway between this top of screen (0) and top of text (293)
-               Inf,
-               861 # the same distance below the bottom of text (715)
-)
+xy_bounds <- NULL 
+# there were lots of out_of_bounds fixations even with this presumably lenient box??
+#c(0,
+#146, # halfway between this top of screen (0) and top of text (293)
+#Inf,
+#861 # the same distance below the bottom of text (715))
 
 start_pts <- rbind(c(200, 324), c(200, 396), c(200, 468), c(200, 540), c(200, 612), c(200, 684))
 
