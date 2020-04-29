@@ -1054,6 +1054,6 @@ fix_align(start_pts = start_pts,
           fa_dir="/Users/duncan/Documents/R analyses/Prediction-Integration/FixAlign")
 
 
-
+# a participant with original file name 'DBP5' is not present here - re-import.
 
 
