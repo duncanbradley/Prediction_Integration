@@ -323,17 +323,23 @@ for filename in file_list:
 					counter = counter + 1
 # now getting the trialid info
 					trialid = fields[3]
+					print(trialid)
 					first_split = trialid.split('I')#split into the condition, and then item and dependent
+					print(first_split)
 					condition = first_split[0]
+					print(condition)
 					cond_num = condition[1:] #strip off the letter from the beginning of condition
+					print(cond_num)
 					second_split = first_split[1].split('D')#split into item and dependent
+					print(second_split)
 					item_num = second_split[0]
-					print(second_split[1])
+					print(item_num)
+					dependent_num = second_split[1]
+					print(dependent_num)
 					#print(trialid, "before")
-					if int(cond_num) >= lowest_cond and int(cond_num) <= highest_cond and condition[0] != 'P' and condition[0] == 'E' and int(second_split[1]) == 0: 
+					if int(cond_num) >= lowest_cond and int(cond_num) <= highest_cond and condition[0] != 'P' and condition[0] == 'E': 
 						#print(trialid, "after")
 #This is taken out now, to allow fillers to be run
-#and condition[0] == "E":
 						copy_it = 1
 						trial_sequence = trial_sequence + [counter]
 # GOT A GOOD TRIAL - COPY LINES UNTIL END OF TRIAL

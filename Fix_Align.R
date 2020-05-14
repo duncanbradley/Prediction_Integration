@@ -1051,7 +1051,7 @@ start_pts <- rbind(c(200, 324), c(200, 396), c(200, 468), c(200, 540), c(200, 61
 fix_align(start_pts = start_pts,
           asc_files = asc_files,
           xy_bounds = xy_bounds,
-          fa_dir="/Users/duncan/Documents/R analyses/Prediction-Integration/FixAlign")
+          fa_dir="/Users/duncan/Documents/R analyses/Prediction_Integration/Prediction_Integration/FixAlign")
 
 
 # a participant with original file name 'DBP5' is not present here - re-import.

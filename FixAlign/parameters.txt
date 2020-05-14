@@ -7,7 +7,7 @@
 #First, and most important:  your list of .asc files.
 #Each one needs to be in quotes, as below.
 
-# file_list = ['w_DBP02.asc']
+file_list = ['w_DBP02_fa.asc']
 #,
 #			'60TL3f.asc',
 #			'61TL3F.asc',
