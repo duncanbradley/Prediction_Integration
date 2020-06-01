@@ -4,11 +4,11 @@ library(tidyverse)
 # FA Processing
   # read in the data
   # separate the columns into file and count
-FA_detect_script_error <- read_csv('FA_detect_script_error.csv', col_names = FALSE) %>%
+FA_detect_script_error <- read_csv('Batches/FA_detect_script_error.csv', col_names = FALSE) %>%
   separate(col = X1, sep = ":", into = c("file", "count")) 
 
 
-# replace asc with DA1 - this is was .lst needs
+# replace asc with DA1 - this is what .lst needs
 FA_detect_script_error$file <- str_replace(string = FA_detect_script_error$file, 
                                         pattern = "asc", 
                                         replacement = "DA1")
@@ -31,11 +31,11 @@ FA_detect_script_error %>%
 # ED Processing
 # read in the data
 # separate the columns into file and count
-ED_detect_script_error <- read_csv('ED_detect_script_error.csv', col_names = FALSE) %>%
+ED_detect_script_error <- read_csv('Batches/ED_detect_script_error.csv', col_names = FALSE) %>%
   separate(col = X1, sep = ":", into = c("file", "count")) 
 
 
-# replace asc with DA1 - this is was .lst needs
+# replace asc with DA1 - this is what .lst needs
 ED_detect_script_error$file <- str_replace(string = ED_detect_script_error$file, 
                                            pattern = "asc", 
                                            replacement = "DA1")
@@ -59,7 +59,7 @@ ED_detect_script_error %>%
 
 # files with no error in script (correct)
 # read in data
-FA_filenames_corr <- read_csv('FA_filenames_corr.csv', col_names = FALSE) #57 obs. 20 20 17
+FA_filenames_corr <- read_csv('Batches/FA_filenames_corr.csv', col_names = FALSE) #57 obs. 20 20 17
 
 # assign batch numbers
 batch_numbers_FA_corr <- c(rep("batch1", 20),
@@ -113,7 +113,7 @@ FA_filenames_error %>%
 
 # files with no error in script (correct)
 # read in data
-ED_filenames_corr <- read_csv('ED_filenames_corr.csv', col_names = FALSE) # 61 obs. 20 20 21
+ED_filenames_corr <- read_csv('Batches/ED_filenames_corr.csv', col_names = FALSE) # 61 obs. 20 20 21
 
 # assign batch numbers
 batch_numbers_ED_corr <- c(rep("batch1", 20),
