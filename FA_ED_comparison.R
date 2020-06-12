@@ -187,15 +187,27 @@ TT <- TT %>% filter(TT$subj %in% FAnums$n)
 TT %>% ggplot(aes(subj)) +
   geom_bar()
 
-TT %>% 
+plot <- TT %>% 
   pivot_longer(cols = R1:R7, names_to = "regions", values_to = "values") %>%
   ggplot(aes(x = regions, 
              y = values,
              colour = method)) +
   geom_point(position = position_jitterdodge(),
              alpha = 0.1) +
-  theme_minimal()
-
+  labs(y = "Total Fixation Time (ms)",
+       x = NULL,
+       colour = "Processing Method:") +
+  scale_color_manual(labels = c("Manual", "Automatic"), 
+                     values = c("darkblue", "orange")) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1)),
+         colour = guide_legend(override.aes = list(size=20))) +
+  theme_minimal(base_size = 20) +
+  theme(legend.position="bottom")
+plot
+ggsave("plot1", plot, device = "png", path = "Batches",
+       height = 4.5,
+       width = 7)
+  
 #find NAs
 TT %>% 
   group_by(method) %>%
@@ -278,11 +290,18 @@ diffs %>%
 diffs_longer <- diffs %>%
   pivot_longer(cols = R1diff:R7diff, names_to = "regions", values_to = "values")
 
-diffs_longer %>% ggplot(aes(x = regions,
+plot <- diffs_longer %>% ggplot(aes(x = regions,
                      y = values)) +
   geom_jitter(width = 0.1,
               alpha = 0.05) +
-  theme_minimal()
+  labs(y = "Difference in \nTotal Fixation Time (ms)",
+       x = NULL) +
+  scale_x_discrete(labels= c("R1", "R2", "R3", "R4", "R5", "R6", "R7")) +
+  theme_minimal(base_size = 20)
+plot
+ggsave("plot1", plot, device = "png", path = "Batches",
+       height = 4.5,
+       width = 7)
 
 
 # visualisations - do not really give that much info
