@@ -1,6 +1,6 @@
 # Prediction-Integration
 
-Studies into message-level prediction during reading
+Studying message-level prediction and integration during reading
 
 A pipeline for taking raw .asc files, tidying and extracting reading time data.
 
