@@ -2,10 +2,12 @@ library(tidyverse)
 library(plyr)
 library(dplyr)
 library(naniar)
+library(reshape2)
 library(fitdistrplus)
 library(lme4)
 library(lmerTest)
 library(broom)
+library(buildmer)
 
 # reading in total time fix_align files
 TT_FA_batch1_corr <- read_csv('FA_files/TT_FA_batch1_corr')
@@ -173,9 +175,13 @@ str(TT$subj)
 # filtering to include only participants in the fixalign dataset
 TT <- TT %>% filter(TT$subj %in% FAnums$n)
 
+# demonstrating there are 64 rows for each participant
+# 32 items per participant x2 for the 2 different processing methods = 64
 TT %>% ggplot(aes(subj)) +
   geom_bar()
+count(TT$subj)
 
+# plot showing total fixation times for the two methods
 plot <- TT %>% 
   pivot_longer(cols = R1:R7, names_to = "regions", values_to = "values") %>%
   ggplot(aes(x = regions, 
@@ -188,8 +194,7 @@ plot <- TT %>%
        colour = "Processing Method:") +
   scale_color_manual(labels = c("Manual", "Automatic"), 
                      values = c("darkblue", "orange")) +
-  guides(colour = guide_legend(override.aes = list(alpha = 1)),
-         colour = guide_legend(override.aes = list(size=20))) +
+  guides(colour = guide_legend(override.aes = list(alpha = 1, size=10))) +
   theme_minimal(base_size = 20) +
   theme(legend.position="bottom")
 plot
@@ -238,24 +243,28 @@ totals <- aggregate(R1 ~ method, data = TT, FUN = sum) %>%
         "R7" = 
           c("0", aggregate(R7 ~ method, data = TT, FUN = sum)$R7))
 
+# melting the dataframe to convert into long format
 totals <- melt(totals, id = "method")
 
+# changing value column to numeric
 totals$value <- as.numeric(totals$value)
 
+# visualising the different between totals for the two methods
 totals %>% ggplot(aes(x = variable,
                        y = value,
                        colour = method)) +
   geom_point()
 
+# pivoting to wider: 1 column for each method
 totals <- totals %>%  pivot_wider(names_from = method, values_from = value)
 
+# summing all fixations for each method
 sum(totals$ED)
 sum(totals$FA)
 
 #calculate and visualise difference (subtraction) between the same observations
-
 diffs <- TT %>% 
-  select(subj, item, cond, R1, R2, R3, R4, R5, R6, R7, method) %>%
+  dplyr::select(subj, item, cond, R1, R2, R3, R4, R5, R6, R7, method) %>%
   pivot_wider(names_from = method, 
               values_from = c(R1, R2, R3,R4, R5, R6, R7)) %>% 
   mutate_all(~replace(., is.na(.), 0)) %>%
@@ -267,18 +276,21 @@ diffs <- TT %>%
     R5diff = R5_ED - R5_FA,
     R6diff = R6_ED - R6_FA,
     R7diff = R7_ED - R7_FA) %>%
-  select(subj, item, cond, R1diff, R2diff, R3diff, R4diff, R5diff, R6diff, R7diff)
+  dplyr::select(subj, item, cond, R1diff, R2diff, R3diff, R4diff, R5diff, R6diff, R7diff)
 
-
+# mean of differences summarised
 diffs %>%
   summarise_at(vars(R1diff:R7diff), mean, na.rm = TRUE)
 
+# standard deviation of differences summarised
 diffs %>%
   summarise_at(vars(R1diff:R7diff), sd, na.rm = TRUE)
 
+# pivoting diffs df to longer
 diffs_longer <- diffs %>%
   pivot_longer(cols = R1diff:R7diff, names_to = "regions", values_to = "values")
 
+# plotting the differences - roughly symmetrical about 0
 plot <- diffs_longer %>% ggplot(aes(x = regions,
                      y = values)) +
   geom_jitter(width = 0.1,
@@ -295,25 +307,15 @@ ggsave("plot1", plot, device = "png", path = "Batches",
 
 # ANALYSIS ####
 
-# download the FP and RPfrom the folders with these names in https://github.com/E-LeLuan/Duncans_Grant
-
-
 # in the analysis I will use all available participants from the Eye Doctor process
 # so rather than using the combined dataframe, I use the separate dataframes
 length(unique(TT_ED$subj))
 length(unique(TT_FA$subj))
 
-# in the script 'Questions 01_10_18' 
-# condition 1 is where prediction is facilitated
-# condition 2 is where prediction is unfacilitated
-# (for further verification: the error in item 16 occurred on the unfacilitated condition,
-# which was condition 2)
-TT_ED$cond <- recode(TT_ED$cond, `1` = "Facilitated", `2` = "Unfacilitated")
-TT_ED$cond <- as.factor(TT_ED$cond)
 
 # EYE DOCTOR ANALYSIS ####
-# TOTAL TIME #
 
+# TOTAL TIME #
 # using na.omit also introduces additional info (location of omitted values)
 # (see https://statisticsglobe.com/na-omit-r-example/ )
 # this is removed using as.numeric()
@@ -321,59 +323,6 @@ descdist(as.numeric(na.omit(TT_ED$R4)))
 # looks closest to a gamma distribution
 descdist(as.numeric(na.omit(TT_ED$R5)))
 # this is closest to lognormal but will use gamma
-
-TT_ED_R4 <- glmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                 family = Gamma(link = "identity"), 
-                 data = TT_ED)
-summary(TT_ED_R4)
-
-TT_ED_R5 <- glmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = TT_ED)
-summary(TT_ED_R5)
-
-TT_R4_means <- TT_ED %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R4, na.rm = TRUE))
-
-TT_ED %>%
-  ggplot(aes(x = cond,
-             y = R4)) +
-  geom_jitter() +
-  geom_point(data = TT_R4_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-TT_R5_means <- TT_ED %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R5, na.rm = TRUE))
-
-TT_ED %>%
-  ggplot(aes(x = cond,
-             y = R5)) +
-  geom_jitter() +
-  geom_point(data = TT_R5_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-table <- tidy(TT_ED_R4) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("TT_ED_R4")) %>%
-  arrange(Model) %>%
-  dplyr::select(- group)
-
-table <- tidy(TT_ED_R5) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("TT_ED_R5")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
 
 # FIRST PASS #
  
@@ -410,67 +359,11 @@ FP_ED <- rbind(FP_ED_b1_c,
                FP_ED_b4_e,
                FP_ED_b5_e) 
 
-FP_ED$cond <- recode(FP_ED$cond, `1` = "Facilitated", `2` = "Unfacilitated")
-FP_ED$cond <- as.factor(FP_ED$cond)
 
 descdist(as.numeric(na.omit(FP_ED$R4)))
 # looks closest to a gamma distribution
 descdist(as.numeric(na.omit(FP_ED$R5)))
 # this is closest to lognormal but will use gamma
-
-FP_ED_R4 <- glmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = FP_ED)
-summary(TT_ED_R4)
-
-FP_ED_R5 <- glmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = FP_ED)
-summary(FP_ED_R5)
-
-FP_R4_means <- FP_ED %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R4, na.rm = TRUE))
-
-FP_ED %>%
-  ggplot(aes(x = cond,
-             y = R4)) +
-  geom_jitter() +
-  geom_point(data = FP_R4_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-FP_R5_means <- FP_ED %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R5, na.rm = TRUE))
-
-FP_ED %>%
-  ggplot(aes(x = cond,
-             y = R5)) +
-  geom_jitter() +
-  geom_point(data = FP_R5_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-table <- tidy(FP_ED_R4) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("FP_ED_R4")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
-
-table <- tidy(FP_ED_R5) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("FP_ED_R5")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
 
 # REGRESSION PATH #
   
@@ -507,128 +400,18 @@ RP_ED <- rbind(RP_ED_b1_c,
                RP_ED_b4_e,
                RP_ED_b5_e) 
 
-RP_ED$cond <- recode(FP_ED$cond, `1` = "Facilitated", `2` = "Unfacilitated")
-RP_ED$cond <- as.factor(FP_ED$cond)
-
 descdist(as.numeric(na.omit(RP_ED$R4)))
 # looks closest to a gamma distribution
 descdist(as.numeric(na.omit(RP_ED$R5)))
 # this is closest to lognormal but will use gamma
 
-RP_ED_R4 <- glmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = RP_ED)
-summary(RP_ED_R4)
-
-RP_ED_R5 <- glmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = RP_ED)
-summary(RP_ED_R5)
-
-RP_R4_means <- RP_ED %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R4, na.rm = TRUE))
-
-RP_ED %>%
-  ggplot(aes(x = cond,
-             y = R4)) +
-  geom_jitter() +
-  geom_point(data = RP_R4_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-RP_R5_means <- RP_ED %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R5, na.rm = TRUE))
-
-RP_ED %>%
-  ggplot(aes(x = cond,
-             y = R5)) +
-  geom_jitter() +
-  geom_point(data = RP_R5_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-table <- tidy(RP_ED_R4) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("RP_ED_R4")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
-
-table <- tidy(RP_ED_R5) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("RP_ED_R5")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
-
 # FIXALIGN ANALYSIS ####
+
 # TOTAL TIME #
 descdist(as.numeric(na.omit(TT_FA$R4)))
 # looks closest to a gamma distribution
 descdist(as.numeric(na.omit(TT_FA$R5)))
 # this is closest to lognormal but will use gamma
-
-TT_FA_R4 <- glmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = TT_FA)
-summary(TT_FA_R4)
-
-TT_FA_R5 <- glmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = TT_FA)
-summary(TT_FA_R5)
-
-TT_R4_means <- TT_FA %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R4, na.rm = TRUE))
-
-TT_FA %>%
-  ggplot(aes(x = cond,
-             y = R4)) +
-  geom_jitter() +
-  geom_point(data = TT_R4_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-TT_R5_means <- TT_FA %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R5, na.rm = TRUE))
-
-TT_FA %>%
-  ggplot(aes(x = cond,
-             y = R5)) +
-  geom_jitter() +
-  geom_point(data = TT_R5_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-table <- tidy(TT_FA_R4) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("TT_FA_R4")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
-
-table <- tidy(TT_FA_R5) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("TT_FA_R5")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
 
 # FIRST PASS #
 
@@ -674,7 +457,6 @@ FP_FA_b3_c$subj <- mapvalues(FP_FA_b3_c$subj, unique(FP_FA_b3_c$subj), FA_b3_lst
 FP_FA_b4_e$subj <- mapvalues(FP_FA_b4_e$subj, unique(FP_FA_b4_e$subj), FA_b4_lst$X1)
 FP_FA_b5_e$subj <- mapvalues(FP_FA_b5_e$subj, unique(FP_FA_b5_e$subj), FA_b5_lst$X1)
 
-
 # binding all together
 FP_FA <- rbind(FP_FA_b1_c,
                FP_FA_b2_c,
@@ -682,67 +464,10 @@ FP_FA <- rbind(FP_FA_b1_c,
                FP_FA_b4_e,
                FP_FA_b5_e)
 
-FP_FA$cond <- recode(FP_FA$cond, `1` = "Facilitated", `2` = "Unfacilitated")
-FP_FA$cond <- as.factor(FP_FA$cond)
-
 descdist(as.numeric(na.omit(FP_FA$R4)))
 # looks closest to a gamma distribution
 descdist(as.numeric(na.omit(FP_FA$R5)))
 # this is closest to lognormal but will use gamma
-
-FP_FA_R4 <- glmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = FP_FA)
-summary(FP_FA_R4)
-
-FP_FA_R5 <- glmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = FP_FA)
-summary(FP_FA_R5)
-
-FP_R4_means <- FP_FA %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R4, na.rm = TRUE))
-
-FP_FA %>%
-  ggplot(aes(x = cond,
-             y = R4)) +
-  geom_jitter() +
-  geom_point(data = FP_R4_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-FP_R5_means <- FP_FA %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R5, na.rm = TRUE))
-
-FP_FA %>%
-  ggplot(aes(x = cond,
-             y = R5)) +
-  geom_jitter() +
-  geom_point(data = FP_R5_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
-
-table <- tidy(FP_FA_R4) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("FP_FA_R4")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
-
-table <- tidy(FP_FA_R5) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("FP_FA_R5")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
 
 # REGRESSION PATH #
 
@@ -788,7 +513,6 @@ RP_FA_b3_c$subj <- mapvalues(RP_FA_b3_c$subj, unique(RP_FA_b3_c$subj), FA_b3_lst
 RP_FA_b4_e$subj <- mapvalues(RP_FA_b4_e$subj, unique(RP_FA_b4_e$subj), FA_b4_lst$X1)
 RP_FA_b5_e$subj <- mapvalues(RP_FA_b5_e$subj, unique(RP_FA_b5_e$subj), FA_b5_lst$X1)
 
-
 # binding all together
 RP_FA <- rbind(RP_FA_b1_c,
                RP_FA_b2_c,
@@ -796,68 +520,108 @@ RP_FA <- rbind(RP_FA_b1_c,
                RP_FA_b4_e,
                RP_FA_b5_e)
 
-RP_FA$cond <- recode(RP_FA$cond, `1` = "Facilitated", `2` = "Unfacilitated")
-RP_FA$cond <- as.factor(RP_FA$cond)
-
 descdist(as.numeric(na.omit(RP_FA$R4)))
 # looks closest to a gamma distribution
 descdist(as.numeric(na.omit(RP_FA$R5)))
 # this is closest to lognormal but will use gamma
 
-RP_FA_R4 <- glmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = RP_FA)
-summary(RP_FA_R4)
 
-RP_FA_R5 <- glmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                  family = Gamma(link = "identity"), 
-                  data = RP_FA)
-summary(RP_FA_R5)
+# MODEL-BUILDING LOOPS ####
 
-RP_R4_means <- RP_FA %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R4, na.rm = TRUE))
+# in the script 'Questions 01_10_18' 
+# condition 1 is where prediction is facilitated
+# condition 2 is where prediction is unfacilitated
+# (for further verification: the error in item 16 occurred on the unfacilitated condition,
+# which was condition 2)
+for (i in 1:nrow(models)) {
+  models[[i, 1]]$cond <- recode(models[[i, 1]]$cond, `1` = "Facilitated", `2` = "Unfacilitated")
+  models[[i, 1]]$cond <- as.factor(models[[i, 1]]$cond)
+  models[[i, 1]]$subj <- as.character(models[[i, 1]]$subj)
+  models[[i, 1]]$item <- as.character(models[[i, 1]]$item)
+}
 
-RP_FA %>%
-  ggplot(aes(x = cond,
-             y = R4)) +
-  geom_jitter() +
-  geom_point(data = RP_R4_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
+# listing all 6 dataframes
+datasets <- list(TT_ED, FP_ED, RP_ED, TT_FA, FP_FA, RP_FA) 
 
-RP_R5_means <- RP_FA %>% 
-  group_by(cond) %>% 
-  dplyr::summarise(mean = mean(R5, na.rm = TRUE))
+# names of all 6 datasets
+dataset_names <- c("TT_ED", "FP_ED", "RP_ED", "TT_FA", "FP_FA", "RP_FA")
 
-RP_FA %>%
-  ggplot(aes(x = cond,
-             y = R5)) +
-  geom_jitter() +
-  geom_point(data = RP_R5_means, stat = "identity",
-             aes(y = mean,
-                 x = cond,
-                 color = cond),
-             size = 3)
+# creating models df from these two vectors
+models <- as.data.frame(cbind(datasets, dataset_names))
 
-table <- tidy(RP_FA_R4) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("RP_FA_R4")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
+# creating blank results dataframe
+results_table_R4 <- data.frame()
 
-table <- tidy(RP_FA_R5) %>%
-  filter(group == "fixed",
-         term != "(Intercept)") %>%
-  cbind(Model = rep("RP_FA_R5")) %>%
-  dplyr::select(- group) %>%
-  rbind(table) %>%
-  arrange(Model)
+# loop for R4 models
+for (i in 1:nrow(models)) {
+  model_name <- paste0(models[[i, 2]], "_R4") # generate the model name
+  LMM <- glmer(R4 ~ cond + (1 | subj) + (1 | item), 
+               family = Gamma(link = "identity"), 
+               data = models[[i, 1]]) # build the model
+  assign(model_name, LMM) # assign the model with the model name
+  
+  # add the results to the results table
+  results_table_R4 <- tidy(LMM) %>%
+    filter(group == "fixed",
+           term != "(Intercept)") %>%
+    cbind(Model = rep(model_name)) %>%
+    dplyr::select(- group) %>%
+    rbind(results_table_R4) %>%
+    arrange(Model)
+}
 
+# creating blank results dataframe
+results_table_R5 <- data.frame()
 
+# loop for building models (like before)
+for (i in 1:nrow(models)) {
+  model_name <- paste0(models[[i, 2]], "_R5")
+  LMM <- glmer(R5 ~ cond + (1 | subj) + (1 | item), 
+               family = Gamma(link = "identity"), 
+               data = models[[i, 1]])
+  assign(model_name, LMM)
+  
+  results_table_R5 <- tidy(LMM) %>%
+    filter(group == "fixed",
+           term != "(Intercept)") %>%
+    cbind(Model = rep(model_name)) %>%
+    dplyr::select(- group) %>%
+    rbind(results_table_R5) %>%
+    arrange(Model)
+}
 
+# rounding numbers in the model tables
+results_table_R4$estimate <- round(results_table_R4$estimate, 2)
+results_table_R4$std.error <- round(results_table_R4$std.error, 2)
+results_table_R4$statistic <- round(results_table_R4$statistic, 2)
+results_table_R4$p.value <- round(results_table_R4$p.value, 3)
+
+results_table_R5$estimate <- round(results_table_R5$estimate, 2)
+results_table_R5$std.error <- round(results_table_R5$std.error, 2)
+results_table_R5$statistic <- round(results_table_R5$statistic, 2)
+results_table_R5$p.value <- round(results_table_R5$p.value, 3)
+
+# writing table as a csv (if necessary)
+write_csv(table_name, file.path("model_summary"))
+
+# USING BUILDMER ####
+# to determine the maximal structure for each model
+
+# R4 loop
+for (i in 1:nrow(models)) {
+  maximal <- buildmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
+                      family = Gamma(link = "identity"), 
+                      data = models[[i, 1]])
+  fm <- formula(maximal)
+  resultsList <- append(resultsList, fm)
+}
+
+# R5 loop
+for (i in 1:nrow(models)) {
+  maximal <- buildmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
+                      family = Gamma(link = "identity"), 
+                      data = models[[i, 1]])
+  fm <- formula(maximal)
+  resultsList <- append(resultsList, fm)
+}
 
