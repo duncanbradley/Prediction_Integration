@@ -197,7 +197,9 @@ plot <- TT %>%
   guides(colour = guide_legend(override.aes = list(alpha = 1, size=10))) +
   theme_minimal(base_size = 20) +
   theme(legend.position="bottom")
+
 plot
+
 ggsave("plot1", plot, device = "png", path = "Batches",
        height = 4.5,
        width = 7)
@@ -299,7 +301,9 @@ plot <- diffs_longer %>% ggplot(aes(x = regions,
        x = NULL) +
   scale_x_discrete(labels= c("R1", "R2", "R3", "R4", "R5", "R6", "R7")) +
   theme_minimal(base_size = 20)
+
 plot
+
 ggsave("plot1", plot, device = "png", path = "Batches",
        height = 4.5,
        width = 7)
@@ -558,7 +562,7 @@ results_table_R4 <- data.frame()
 for (i in 1:nrow(models)) {
   model_name <- paste0(models[[i, 2]], "_R4") # generate the model name
   LMM <- glmer(R4 ~ cond + (1 | subj) + (1 | item), 
-               family = Gamma(link = "identity"), 
+               family = Gamma(link = "log"), 
                data = models[[i, 1]]) # build the model
   assign(model_name, LMM) # assign the model with the model name
   
@@ -579,7 +583,7 @@ results_table_R5 <- data.frame()
 for (i in 1:nrow(models)) {
   model_name <- paste0(models[[i, 2]], "_R5")
   LMM <- glmer(R5 ~ cond + (1 | subj) + (1 | item), 
-               family = Gamma(link = "identity"), 
+               family = Gamma(link = "log"), 
                data = models[[i, 1]])
   assign(model_name, LMM)
   
@@ -612,7 +616,7 @@ write_csv(table_name, file.path("model_summary"))
 # R4 loop
 for (i in 1:nrow(models)) {
   maximal <- buildmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                      family = Gamma(link = "identity"), 
+                      family = Gamma(link = "log"), 
                       data = models[[i, 1]])
   fm <- formula(maximal)
   resultsList <- append(resultsList, fm)
@@ -621,7 +625,7 @@ for (i in 1:nrow(models)) {
 # R5 loop
 for (i in 1:nrow(models)) {
   maximal <- buildmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                      family = Gamma(link = "identity"), 
+                      family = Gamma(link = "log"), 
                       data = models[[i, 1]])
   fm <- formula(maximal)
   resultsList <- append(resultsList, fm)
