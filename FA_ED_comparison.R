@@ -607,6 +607,28 @@ results_table_R5$std.error <- round(results_table_R5$std.error, 2)
 results_table_R5$statistic <- round(results_table_R5$statistic, 2)
 results_table_R5$p.value <- round(results_table_R5$p.value, 3)
 
+stats_table <- data.frame()
+
+for (i in 1:nrow(models)) {
+  
+  stats_table <- models[[i, 1]] %>%
+    group_by(cond) %>% 
+    dplyr::summarise(mean_R4 = mean(R4, na.rm = TRUE), 
+                     mean_R5 = mean(R5, na.rm = TRUE)) %>%
+    t() %>%
+    row_to_names(1) %>%
+    data.frame() %>%
+    cbind(dataset = models[[i, 2]]) %>%
+    rbind(stats_table)
+    
+}
+
+stats_table$Facilitated <- as.double(stats_table$Facilitated)
+stats_table$Unfacilitated <- as.double(stats_table$Unfacilitated)
+
+stats_table <- stats_table %>% mutate(Difference = (Unfacilitated - Facilitated))
+
+
 # writing table as a csv (if necessary)
 write_csv(table_name, file.path("model_summary"))
 
