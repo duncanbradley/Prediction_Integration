@@ -1,0 +1,13 @@
+term,estimate,std.error,statistic,p.value,Model
+condUnfacilitated,73.31,0,94588.38,0,FP_ED_R4
+condUnfacilitated,62.12,0,109904.28,0,FP_ED_R5
+condUnfacilitated,14.76,7.59,1.94,0.052,FP_FA_R4
+condUnfacilitated,-6.98,8.28,-0.84,0.399,FP_FA_R5
+condUnfacilitated,18.88,5.96,3.17,0.002,RP_ED_R4
+condUnfacilitated,150.74,8.07,18.67,0,RP_ED_R5
+condUnfacilitated,13.89,13.19,1.05,0.292,RP_FA_R4
+condUnfacilitated,98.87,0,98461.59,0,RP_FA_R5
+condUnfacilitated,115.13,7.4,15.56,0,TT_ED_R4
+condUnfacilitated,106.92,14.96,7.15,0,TT_ED_R5
+cond,104.34,8.02,13.01,0,TT_FA_R4
+cond,86.42,6.56,13.16,0,TT_FA_R5

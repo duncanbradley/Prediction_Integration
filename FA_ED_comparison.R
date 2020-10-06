@@ -528,6 +528,16 @@ descdist(as.numeric(na.omit(RP_FA$R5)))
 
 # MODEL-BUILDING LOOPS ####
 
+# listing all 6 dataframes
+datasets <- list(TT_ED, FP_ED, RP_ED, TT_FA, FP_FA, RP_FA) 
+
+# names of all 6 datasets
+dataset_names <- c("TT_ED", "FP_ED", "RP_ED", "TT_FA", "FP_FA", "RP_FA")
+
+# creating models df from these two vectors
+models <- as.data.frame(cbind(datasets, dataset_names))
+
+
 # in the script 'Questions 01_10_18' 
 # condition 1 is where prediction is facilitated
 # condition 2 is where prediction is unfacilitated
@@ -540,14 +550,6 @@ for (i in 1:nrow(models)) {
   models[[i, 1]]$item <- as.character(models[[i, 1]]$item)
 }
 
-# listing all 6 dataframes
-datasets <- list(TT_ED, FP_ED, RP_ED, TT_FA, FP_FA, RP_FA) 
-
-# names of all 6 datasets
-dataset_names <- c("TT_ED", "FP_ED", "RP_ED", "TT_FA", "FP_FA", "RP_FA")
-
-# creating models df from these two vectors
-models <- as.data.frame(cbind(datasets, dataset_names))
 
 # creating blank results dataframe
 results_table_R4 <- data.frame()
