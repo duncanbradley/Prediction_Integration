@@ -197,7 +197,9 @@ plot <- TT %>%
   guides(colour = guide_legend(override.aes = list(alpha = 1, size=10))) +
   theme_minimal(base_size = 20) +
   theme(legend.position="bottom")
+
 plot
+
 ggsave("plot1", plot, device = "png", path = "Batches",
        height = 4.5,
        width = 7)
@@ -299,7 +301,9 @@ plot <- diffs_longer %>% ggplot(aes(x = regions,
        x = NULL) +
   scale_x_discrete(labels= c("R1", "R2", "R3", "R4", "R5", "R6", "R7")) +
   theme_minimal(base_size = 20)
+
 plot
+
 ggsave("plot1", plot, device = "png", path = "Batches",
        height = 4.5,
        width = 7)
@@ -634,7 +638,7 @@ write_csv(table_name, file.path("model_summary"))
 # R4 loop
 for (i in 1:nrow(models)) {
   maximal <- buildmer(R4 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                      family = Gamma(link = "identity"), 
+                      family = Gamma(link = "log"), 
                       data = models[[i, 1]])
   fm <- formula(maximal)
   resultsList <- append(resultsList, fm)
@@ -643,7 +647,7 @@ for (i in 1:nrow(models)) {
 # R5 loop
 for (i in 1:nrow(models)) {
   maximal <- buildmer(R5 ~ cond + (1 + cond | subj) + (1 + cond | item), 
-                      family = Gamma(link = "identity"), 
+                      family = Gamma(link = "log"), 
                       data = models[[i, 1]])
   fm <- formula(maximal)
   resultsList <- append(resultsList, fm)
