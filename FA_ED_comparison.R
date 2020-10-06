@@ -558,7 +558,7 @@ results_table_R4 <- data.frame()
 for (i in 1:nrow(models)) {
   model_name <- paste0(models[[i, 2]], "_R4") # generate the model name
   LMM <- glmer(R4 ~ cond + (1 | subj) + (1 | item), 
-               family = Gamma(link = "identity"), 
+               family = Gamma(link = "log"), 
                data = models[[i, 1]]) # build the model
   assign(model_name, LMM) # assign the model with the model name
   
@@ -579,7 +579,7 @@ results_table_R5 <- data.frame()
 for (i in 1:nrow(models)) {
   model_name <- paste0(models[[i, 2]], "_R5")
   LMM <- glmer(R5 ~ cond + (1 | subj) + (1 | item), 
-               family = Gamma(link = "identity"), 
+               family = Gamma(link = "log"), 
                data = models[[i, 1]])
   assign(model_name, LMM)
   
@@ -602,6 +602,28 @@ results_table_R5$estimate <- round(results_table_R5$estimate, 2)
 results_table_R5$std.error <- round(results_table_R5$std.error, 2)
 results_table_R5$statistic <- round(results_table_R5$statistic, 2)
 results_table_R5$p.value <- round(results_table_R5$p.value, 3)
+
+stats_table <- data.frame()
+
+for (i in 1:nrow(models)) {
+  
+  stats_table <- models[[i, 1]] %>%
+    group_by(cond) %>% 
+    dplyr::summarise(mean_R4 = mean(R4, na.rm = TRUE), 
+                     mean_R5 = mean(R5, na.rm = TRUE)) %>%
+    t() %>%
+    row_to_names(1) %>%
+    data.frame() %>%
+    cbind(dataset = models[[i, 2]]) %>%
+    rbind(stats_table)
+    
+}
+
+stats_table$Facilitated <- as.double(stats_table$Facilitated)
+stats_table$Unfacilitated <- as.double(stats_table$Unfacilitated)
+
+stats_table <- stats_table %>% mutate(Difference = (Unfacilitated - Facilitated))
+
 
 # writing table as a csv (if necessary)
 write_csv(table_name, file.path("model_summary"))
