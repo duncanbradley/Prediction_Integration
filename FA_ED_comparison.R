@@ -8,6 +8,7 @@ library(lme4)
 library(lmerTest)
 library(broom)
 library(buildmer)
+library(janitor)
 
 # reading in total time fix_align files
 TT_FA_batch1_corr <- read_csv('FA_files/TT_FA_batch1_corr')
@@ -607,30 +608,44 @@ results_table_R5$std.error <- round(results_table_R5$std.error, 2)
 results_table_R5$statistic <- round(results_table_R5$statistic, 2)
 results_table_R5$p.value <- round(results_table_R5$p.value, 3)
 
-stats_table <- data.frame()
+# writing table as a csv 
+write_csv(results_table_R4, file.path("results_table_R4"))
+write_csv(results_table_R5, file.path("results_table_R5"))
+
+# loop for descriptive statistics (means)
+stats_table_R4 <- data.frame()
+stats_table_R5 <- data.frame()
 
 for (i in 1:nrow(models)) {
   
-  stats_table <- models[[i, 1]] %>%
+  stats_table_R4 <- models[[i, 1]] %>%
     group_by(cond) %>% 
-    dplyr::summarise(mean_R4 = mean(R4, na.rm = TRUE), 
-                     mean_R5 = mean(R5, na.rm = TRUE)) %>%
+    dplyr::summarise(mean_R4 = mean(R4, na.rm = TRUE)) %>%
     t() %>%
     row_to_names(1) %>%
     data.frame() %>%
     cbind(dataset = models[[i, 2]]) %>%
-    rbind(stats_table)
+    rbind(stats_table_R4) %>%
+    arrange(dataset)
+  
+  stats_table_R5 <- models[[i, 1]] %>%
+    group_by(cond) %>% 
+    dplyr::summarise(mean_R5 = mean(R5, na.rm = TRUE)) %>%
+    t() %>%
+    row_to_names(1) %>%
+    data.frame() %>%
+    cbind(dataset = models[[i, 2]]) %>%
+    rbind(stats_table_R5) %>%
+    arrange(dataset)
     
 }
 
-stats_table$Facilitated <- as.double(stats_table$Facilitated)
-stats_table$Unfacilitated <- as.double(stats_table$Unfacilitated)
+# converting to double
+stats_table_R4$Facilitated <- as.double(stats_table_R4$Facilitated)
+stats_table_R4$Unfacilitated <- as.double(stats_table_R4$Unfacilitated)
 
-stats_table <- stats_table %>% mutate(Difference = (Unfacilitated - Facilitated))
-
-
-# writing table as a csv (if necessary)
-write_csv(table_name, file.path("model_summary"))
+stats_table_R5$Facilitated <- as.double(stats_table_R5$Facilitated)
+stats_table_R5$Unfacilitated <- as.double(stats_table_R5$Unfacilitated)
 
 # USING BUILDMER ####
 # to determine the maximal structure for each model
